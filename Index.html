@@ -336,6 +336,23 @@ header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;back
 
 <div class="toast" id="toast"></div>
 
+<script>
+window.addEventListener('error', function(e) {
+  console.error('Error:', e.message);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  console.error('Firebase/async error:', e.reason);
+  var t = document.getElementById('toast');
+  if (t) {
+    t.textContent = 'Connection error. Check your internet.';
+    t.style.borderColor = 'var(--red)';
+    t.style.color = 'var(--red)';
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); t.style.borderColor=''; t.style.color=''; }, 4000);
+  }
+});
+</script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, addDoc, query, orderBy, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -377,12 +394,15 @@ onSnapshot(barbersCol, snap => {
     renderBarberDash();
   }
   if (document.getElementById('teacher-dashboard').style.display === 'block') renderTeacher();
+  checkStudentBooking();
 });
 
 onSnapshot(query(bookingsCol, orderBy('ts','asc')), snap => {
   bookings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (loggedInId) renderBarberDash();
   if (document.getElementById('teacher-dashboard').style.display === 'block') renderTeacher();
+  // Check if student's saved booking still exists — if deleted, clear it
+  checkStudentBooking();
 });
 
 onSnapshot(settingsRef, snap => {
@@ -494,6 +514,32 @@ window.goBack = () => {
   document.getElementById('success-screen').classList.remove('show');
   showBanner();
 };
+
+function checkStudentBooking() {
+  const s = sessionStorage.getItem('myBk');
+  if (!s) return;
+  try {
+    const bk = JSON.parse(s);
+    // Check if this student's booking still exists in the database
+    const stillExists = bookings.find(b =>
+      b.student === bk.name &&
+      b.barber === bk.barber &&
+      b.period === bk.period &&
+      b.status !== 'noshow'
+    );
+    if (!stillExists) {
+      // Booking was deleted or marked no show — clear it
+      sessionStorage.removeItem('myBk');
+      document.getElementById('my-booking-banner').style.display = 'none';
+      // If they're on the success screen, send them back
+      const ss = document.getElementById('success-screen');
+      if (ss.classList.contains('show')) {
+        ss.classList.remove('show');
+        document.getElementById('booking-main').style.display = 'block';
+      }
+    }
+  } catch(e) {}
+}
 
 function showBanner() {
   const s = sessionStorage.getItem('myBk'); if (!s) return;
