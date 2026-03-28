@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blake Cuts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#0a0a0a;--card:#141414;--border:#222;--gold:#c9a84c;--gold2:#f0cb6e;--white:#f5f5f5;--muted:#666;--green:#3ecf6e;--red:#e05555;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--black);color:var(--white);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+header{padding:28px 20px 20px;text-align:center;border-bottom:1px solid var(--border);position:relative;}
+header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold2),var(--gold));}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:3px;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
+.tagline{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--card);}
+.tab{flex:1;padding:14px;text-align:center;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;}
+.tab.active{color:var(--gold);border-bottom:2px solid var(--gold);}
+.view{display:none;padding:20px;}
+.view.active{display:block;animation:fadeIn 0.18s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.section-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.barber-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 16px;margin-bottom:12px;position:relative;overflow:hidden;transition:transform 0.15s;}
+.barber-card.open{cursor:pointer;}
+.barber-card.open:active{transform:scale(0.98);}
+.barber-card.closed{opacity:0.4;}
+.barber-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
+.barber-card.open::before{background:var(--green);}
+.barber-card.closed::before{background:var(--red);}
+.barber-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.barber-info{display:flex;align-items:center;gap:12px;}
+.avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);flex-shrink:0;}
+.barber-name-text{font-weight:600;font-size:17px;}
+.status-pill{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;border-radius:20px;}
+.status-pill.open{background:rgba(62,207,110,0.15);color:var(--green);}
+.status-pill.closed{background:rgba(224,85,85,0.15);color:var(--red);}
+.book-btn{width:100%;padding:11px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--black);border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:transform 0.15s;}
+.book-btn:active{transform:scale(0.97);}
+.book-btn:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:100;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:#181818;border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:20px 20px 0 0;padding:28px 24px 44px;width:100%;max-width:480px;animation:slideUp 0.25s ease;}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--gold);margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.form-group{margin-bottom:16px;}
+.form-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px;}
+.form-input,.form-select{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;color:var(--white);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;-webkit-appearance:none;}
+.form-input:focus,.form-select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.12);}
+.form-select option{background:#1a1a1a;}
+.primary-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--black);border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;cursor:pointer;margin-top:8px;transition:transform 0.15s,box-shadow 0.15s;display:block;box-shadow:0 4px 20px rgba(201,168,76,0.25);}
+.primary-btn:hover{box-shadow:0 4px 28px rgba(201,168,76,0.45);}
+.primary-btn:active{transform:scale(0.97);}
+.primary-btn:disabled{opacity:0.6;cursor:not-allowed;}
+.secondary-btn{width:100%;padding:14px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;margin-top:8px;display:block;}
+.success-screen{display:none;text-align:center;padding:40px 20px;}
+.success-screen.show{display:block;}
+.success-icon{font-size:64px;margin-bottom:16px;}
+.success-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:3px;color:var(--green);margin-bottom:8px;}
+.success-msg{color:var(--muted);font-size:14px;line-height:1.8;margin-bottom:16px;}
+.warning-box{background:rgba(201,168,76,0.1);border:1px solid var(--gold);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--gold);font-weight:600;margin-bottom:16px;}
+.hall-code-box{display:none;background:var(--card);border:2px solid var(--gold);border-radius:12px;padding:20px;margin-bottom:24px;}
+.hall-code-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.hall-code-val{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:10px;color:var(--gold);line-height:1;}
+.back-btn{display:inline-block;padding:14px 32px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--white);font-size:14px;font-weight:600;cursor:pointer;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+.empty-text{font-size:13px;line-height:1.6;}
+.login-screen{max-width:400px;margin:40px auto;text-align:center;}
+.login-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;color:var(--gold);margin-bottom:8px;}
+.login-sub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.or-divider{color:var(--muted);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:20px 0;position:relative;}
+.or-divider::before,.or-divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--border);}
+.or-divider::before{left:0;}.or-divider::after{right:0;}
+.err-msg{color:var(--red);font-size:13px;margin-top:12px;display:none;}
+.barber-dashboard{display:none;}
+.dash-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.dash-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);}
+.dash-name{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--gold);line-height:1;}
+.dash-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.status-toggle-row{display:flex;gap:10px;margin-bottom:24px;}
+.tog-status{flex:1;padding:13px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;}
+.tog-status.set-open{background:rgba(62,207,110,0.1);color:var(--green);border:1px solid var(--green);}
+.tog-status.set-open.active{background:var(--green);color:var(--black);}
+.tog-status.set-closed{background:rgba(224,85,85,0.1);color:var(--red);border:1px solid var(--red);}
+.tog-status.set-closed.active{background:var(--red);color:var(--white);}
+.client-row{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+.client-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.client-name{font-weight:600;font-size:15px;}
+.client-period{font-size:12px;color:var(--muted);margin-top:2px;}
+.client-actions{display:flex;gap:8px;}
+.action-btn{padding:7px 14px;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:none;}
+.action-btn.showed{background:rgba(62,207,110,0.15);color:var(--green);border:1px solid var(--green);}
+.action-btn.noshow{background:rgba(224,85,85,0.15);color:var(--red);border:1px solid var(--red);}
+.status-tag{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:6px;}
+.status-tag.showed{background:rgba(62,207,110,0.15);color:var(--green);}
+.status-tag.noshow{background:rgba(224,85,85,0.15);color:var(--red);}
+.status-tag.pending{background:rgba(201,168,76,0.15);color:var(--gold);}
+.teacher-dashboard{display:none;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold);line-height:1;}
+.stat-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.panel-section{margin-bottom:28px;}
+.panel-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold);margin-bottom:14px;}
+.passcode-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+.passcode-row{display:flex;align-items:center;justify-content:space-between;}
+.passcode-label{font-size:12px;color:var(--muted);margin-bottom:4px;}
+.passcode-val{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--gold);}
+.change-pc-btn{padding:8px 16px;background:transparent;border:1px solid var(--gold);border-radius:8px;color:var(--gold);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;white-space:nowrap;}
+.change-pc-form{margin-top:14px;display:none;}
+.inline-row{display:flex;gap:10px;margin-top:8px;}
+.inline-row .form-input{flex:1;}
+.save-btn{padding:14px 18px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--black);border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:16px;cursor:pointer;flex-shrink:0;}
+.hall-section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.hall-big{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:8px;color:var(--gold);margin:10px 0;}
+.manage-row{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.manage-info{display:flex;align-items:center;gap:10px;flex:1;}
+.manage-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--gold);flex-shrink:0;}
+.manage-name{font-weight:600;font-size:14px;}
+.manage-status{font-size:11px;margin-top:2px;}
+.manage-status.open{color:var(--green);}
+.manage-status.closed{color:var(--red);}
+.manage-actions{display:flex;gap:8px;flex-shrink:0;}
+.tog-btn{padding:6px 14px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;}
+.tog-btn.open{background:rgba(62,207,110,0.15);color:var(--green);border:1px solid var(--green);}
+.tog-btn.closed{background:rgba(224,85,85,0.15);color:var(--red);border:1px solid var(--red);}
+.del-btn{padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--red);font-size:14px;cursor:pointer;}
+.bookings-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.clear-btn{font-size:12px;color:var(--red);background:transparent;border:1px solid var(--red);border-radius:6px;padding:7px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;}
+.booking-row{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.booking-student{font-weight:600;font-size:15px;}
+.booking-detail{font-size:12px;color:var(--muted);margin-top:2px;}
+.booking-barber{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;text-align:right;}
+.booking-period{font-size:11px;color:var(--muted);text-align:right;}
+.logout-btn{width:100%;padding:12px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;margin-top:8px;font-family:'DM Sans',sans-serif;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--gold);border-radius:10px;padding:14px 20px;color:var(--gold);font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity 0.2s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+.my-booking-banner{display:none;background:var(--card);border:1px solid var(--gold);border-radius:12px;padding:14px 16px;margin-bottom:20px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Blake Cuts</div>
+  <div class="tagline">Blake High School &bull; Barber Shop</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-book" onclick="switchTab('book')">&#9988;&#65039; Book</div>
+  <div class="tab" id="tab-barber" onclick="switchTab('barber')">&#128136; Barbers</div>
+  <div class="tab" id="tab-teacher" onclick="switchTab('teacher')">&#128274; Teacher</div>
+</div>
+
+<!-- BOOK -->
+
+<div class="view active" id="view-book">
+  <div id="booking-main">
+    <div class="my-booking-banner" id="my-booking-banner">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);">Your Current Booking</div>
+        <div id="my-booking-code" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:4px;color:var(--gold);display:none;"></div>
+      </div>
+      <div id="my-booking-detail" style="font-size:14px;font-weight:600;color:var(--white);"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Be there at the START of the period.</div>
+    </div>
+    <div class="section-label">Available Now</div>
+    <div id="open-barbers"><div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;">Connecting...</div></div>
+    <div class="section-label" style="margin-top:20px">Unavailable</div>
+    <div id="closed-barbers"></div>
+  </div>
+  <div class="success-screen" id="success-screen">
+    <div class="success-icon">&#9989;</div>
+    <div class="success-title">You're Booked!</div>
+    <div class="success-msg" id="success-msg"></div>
+    <div class="warning-box">&#9888;&#65039; Be there at the START of the period or your spot is gone.</div>
+    <div class="hall-code-box" id="hall-code-box">
+      <div class="hall-code-label">Your Booking Code</div>
+      <div class="hall-code-val" id="hall-code-show"></div>
+    </div>
+    <div class="back-btn" onclick="goBack()">&#8592; Back to Barbers</div>
+  </div>
+</div>
+
+<!-- BARBER -->
+
+<div class="view" id="view-barber">
+  <div class="login-screen" id="barber-login">
+    <div class="login-title">Barber Login</div>
+    <div class="login-sub">Select your name and enter your passcode</div>
+    <div class="form-group">
+      <label class="form-label">Your Name</label>
+      <select class="form-select" id="barber-select">
+        <option value="">-- select your name --</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Your Passcode</label>
+      <input class="form-input" type="password" id="barber-passcode" placeholder="Enter your passcode" />
+    </div>
+    <button class="primary-btn" onclick="barberLogin()">Enter</button>
+    <p class="err-msg" id="barber-error"></p>
+    <div class="or-divider">or</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">New barber? Register with the shop passcode your teacher gave you.</p>
+    <button class="secondary-btn" onclick="showReg()">Register as a Barber</button>
+  </div>
+  <div class="login-screen" id="barber-register" style="display:none">
+    <div class="login-title">Register</div>
+    <div class="login-sub">Get the shop passcode from your teacher first</div>
+    <div class="form-group">
+      <label class="form-label">Shop Passcode</label>
+      <input class="form-input" type="password" id="reg-shop-code" placeholder="Shop passcode" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Your Name</label>
+      <input class="form-input" id="reg-name" placeholder="Your name" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Create Your Passcode</label>
+      <input class="form-input" type="password" id="reg-pc1" placeholder="Create a passcode" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Confirm Passcode</label>
+      <input class="form-input" type="password" id="reg-pc2" placeholder="Confirm passcode" />
+    </div>
+    <button class="primary-btn" onclick="registerBarber()">Create Account</button>
+    <p class="err-msg" id="reg-error"></p>
+    <button class="secondary-btn" onclick="showLogin()">&#8592; Back to Login</button>
+  </div>
+  <div class="barber-dashboard" id="barber-dashboard">
+    <div class="dash-header">
+      <div class="dash-avatar" id="b-avatar"></div>
+      <div>
+        <div class="dash-name" id="b-name"></div>
+        <div class="dash-sub">Your clients today</div>
+      </div>
+    </div>
+    <div class="status-toggle-row">
+      <button class="tog-status set-open" id="btn-open" onclick="setBarberStatus('open')">&#129001; Open</button>
+      <button class="tog-status set-closed" id="btn-closed" onclick="setBarberStatus('closed')">&#128997; Closed</button>
+    </div>
+    <div class="section-label">Client List</div>
+    <div id="barber-client-list"></div>
+    <button class="logout-btn" onclick="barberLogout()">Log Out</button>
+  </div>
+</div>
+
+<!-- TEACHER -->
+
+<div class="view" id="view-teacher">
+  <div class="login-screen" id="teacher-login">
+    <div class="login-title">Teacher Access</div>
+    <div class="login-sub">Enter your passcode to manage the shop</div>
+    <div class="form-group">
+      <label class="form-label">Passcode</label>
+      <input class="form-input" type="password" id="teacher-pc-input" placeholder="Enter passcode" />
+    </div>
+    <button class="primary-btn" onclick="teacherLogin()">Enter</button>
+    <p class="err-msg" id="teacher-error">Wrong passcode. Try again.</p>
+  </div>
+  <div class="teacher-dashboard" id="teacher-dashboard">
+    <div class="stats-row" id="stats-row"></div>
+    <div class="panel-section">
+      <div class="panel-title">Shop Passcode</div>
+      <div class="passcode-box">
+        <div class="passcode-row">
+          <div>
+            <div class="passcode-label">Barbers use this to register</div>
+            <div class="passcode-val" id="shop-pc-display">...</div>
+          </div>
+          <button class="change-pc-btn" onclick="togglePcForm()">Change</button>
+        </div>
+        <div class="change-pc-form" id="change-pc-form">
+          <div class="form-label" style="text-align:left;margin-top:8px">New shop passcode</div>
+          <div class="inline-row">
+            <input class="form-input" id="new-shop-pc" placeholder="New passcode" />
+            <button class="save-btn" onclick="saveShopPc()">Save</button>
+          </div>
+          <p class="err-msg" id="pc-error" style="text-align:left"></p>
+        </div>
+      </div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-title">Daily Hallway Code</div>
+      <div class="hall-section">
+        <div class="passcode-label">Students show this code to the AP in the hallway</div>
+        <div class="hall-big" id="hall-display">--</div>
+        <div style="margin-bottom:14px;">
+          <button class="change-pc-btn" style="width:100%;text-align:center;" onclick="genHallCode()">Generate New Code</button>
+        </div>
+        <div class="form-label" style="text-align:left;margin-bottom:6px;">Or set a custom code</div>
+        <div class="inline-row">
+          <input class="form-input" id="custom-hall" placeholder="e.g. BLAKE4" style="text-transform:uppercase" />
+          <button class="save-btn" onclick="setCustomHall()">Set</button>
+        </div>
+        <p class="err-msg" id="hall-err" style="text-align:left;margin-top:8px;"></p>
+      </div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-title">Barbers</div>
+      <div id="barber-manage-list"></div>
+    </div>
+    <div class="panel-section">
+      <div class="bookings-header">
+        <div class="panel-title" style="margin-bottom:0">All Bookings</div>
+        <button class="clear-btn" onclick="clearBookings()">Clear All</button>
+      </div>
+      <div id="bookings-list"></div>
+    </div>
+    <button class="logout-btn" onclick="teacherLogout()">Log Out</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Book</div>
+    <div class="modal-sub">Enter your name and select your period</div>
+    <div class="form-group">
+      <label class="form-label">Your Name</label>
+      <input class="form-input" id="student-name" placeholder="Enter your name" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Period</label>
+      <select class="form-select" id="period-select"></select>
+    </div>
+    <button class="primary-btn" id="confirm-btn" onclick="confirmBooking()">Confirm Booking</button>
+    <button class="secondary-btn" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, addDoc, query, orderBy, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDM9qJ-rDL48wUKeviEW1MqeNlN-phTpB8",
+  authDomain: "blake-cuts.firebaseapp.com",
+  projectId: "blake-cuts",
+  storageBucket: "blake-cuts.firebasestorage.app",
+  messagingSenderId: "605936266048",
+  appId: "1:605936266048:web:ce1d1c2ed5d0dafe7b28a5"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const barbersCol  = collection(db, 'barbers');
+const bookingsCol = collection(db, 'bookings');
+const settingsRef = doc(db, 'settings', 'shop');
+
+const TEACHER_PW = 'blake2025';
+let barbers = [], bookings = [], shopPc = 'shop1234', hallCode = '';
+let selectedId = null, loggedInId = null;
+
+function ini(n) { return (n && n.length) ? n.trim().charAt(0).toUpperCase() : '?'; }
+function showErr(id, msg) { const e = document.getElementById(id); e.textContent = msg; e.style.display = 'block'; }
+function hideErr(id) { document.getElementById(id).style.display = 'none'; }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// LISTENERS
+onSnapshot(barbersCol, snap => {
+  barbers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderBook(); fillSel();
+  if (loggedInId) {
+    if (!barbers.find(b => b.id === loggedInId)) { barberLogout(); showErr('barber-error','Your account was removed.'); return; }
+    renderBarberDash();
+  }
+  if (document.getElementById('teacher-dashboard').style.display === 'block') renderTeacher();
+});
+
+onSnapshot(query(bookingsCol, orderBy('ts','asc')), snap => {
+  bookings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (loggedInId) renderBarberDash();
+  if (document.getElementById('teacher-dashboard').style.display === 'block') renderTeacher();
+});
+
+onSnapshot(settingsRef, snap => {
+  if (snap.exists()) {
+    const d = snap.data();
+    shopPc = (d.shopPc || 'shop1234').trim();
+    hallCode = (d.hallCode || '').trim();
+    const sp = document.getElementById('shop-pc-display'); if (sp) sp.textContent = shopPc;
+    const hd = document.getElementById('hall-display'); if (hd) hd.textContent = hallCode || '--';
+  } else { setDoc(settingsRef, { shopPc: 'shop1234', hallCode: '' }); }
+});
+
+// TABS
+window.switchTab = tab => {
+  ['book','barber','teacher'].forEach(n => {
+    document.getElementById('tab-'+n).classList.remove('active');
+    document.getElementById('view-'+n).classList.remove('active');
+  });
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('view-'+tab).classList.add('active');
+  if (tab === 'barber') fillSel();
+};
+
+// STUDENT
+function renderBook() {
+  const open = barbers.filter(b => b.status === 'open');
+  const closed = barbers.filter(b => b.status !== 'open');
+  buildCards('open-barbers', open, '<div class="empty-state"><div class="empty-icon">&#9988;&#65039;</div><div class="empty-text">No barbers open right now.<br>Check back next period!</div></div>');
+  buildCards('closed-barbers', closed, '<div style="color:var(--muted);font-size:13px;padding:4px 0">None right now</div>');
+  showBanner();
+}
+
+function buildCards(cid, list, empty) {
+  const c = document.getElementById(cid); if (!c) return;
+  c.innerHTML = '';
+  if (!list.length) { c.innerHTML = empty; return; }
+  list.forEach(b => {
+    const o = b.status === 'open';
+    const card = document.createElement('div');
+    card.className = 'barber-card ' + (o ? 'open' : 'closed');
+    card.innerHTML =
+      '<div class="barber-row"><div class="barber-info"><div class="avatar">' + ini(b.name) + '</div>' +
+      '<div><div class="barber-name-text">' + b.name + '</div></div></div>' +
+      '<div class="status-pill ' + (o?'open':'closed') + '">' + (o?'Open':'Closed') + '</div></div>' +
+      '<button class="book-btn"' + (o?'':' disabled') + '>' + (o?'Book Now &rarr;':'Not Taking Clients') + '</button>';
+    if (o) card.addEventListener('click', () => openModal(b.id));
+    c.appendChild(card);
+  });
+}
+
+window.openModal = id => {
+  selectedId = id;
+  const b = barbers.find(x => x.id === id); if (!b) return;
+  const taken = {};
+  bookings.forEach(bk => { if (bk.barberId === id && bk.status !== 'noshow') taken[bk.period] = true; });
+  const periods = ['1st','2nd','3rd','4th','5th','6th','7th'];
+  const hot = {'4th':true,'5th':true,'6th':true};
+  const sel = document.getElementById('period-select');
+  sel.innerHTML = '';
+  let first = null;
+  periods.forEach(p => {
+    if (!taken[p]) {
+      const opt = document.createElement('option');
+      opt.value = p; opt.textContent = p + ' Period' + (hot[p] ? ' (Peak)' : '');
+      sel.appendChild(opt); if (!first) first = p;
+    }
+  });
+  if (!first) { toast(b.name + ' is fully booked today.'); return; }
+  sel.value = first;
+  document.getElementById('modal-title').textContent = 'Book ' + b.name;
+  document.getElementById('student-name').value = '';
+  document.getElementById('modal').classList.add('open');
+};
+
+window.closeModal = () => { document.getElementById('modal').classList.remove('open'); selectedId = null; };
+
+window.confirmBooking = async () => {
+  const name = document.getElementById('student-name').value.trim();
+  const period = document.getElementById('period-select').value;
+  if (!name) {
+    const inp = document.getElementById('student-name');
+    inp.style.borderColor = 'var(--red)'; inp.placeholder = 'Name is required!';
+    setTimeout(() => { inp.style.borderColor=''; inp.placeholder='Enter your name'; }, 2000); return;
+  }
+  const b = barbers.find(x => x.id === selectedId); if (!b) return;
+  const btn = document.getElementById('confirm-btn');
+  btn.textContent = 'Booking...'; btn.disabled = true;
+  const t = new Date(); let hr = t.getHours(), mn = t.getMinutes();
+  const ap = hr >= 12 ? 'PM' : 'AM'; hr = hr % 12; if (!hr) hr = 12;
+  const time = hr + ':' + (mn<10?'0':'') + mn + ' ' + ap;
+  try {
+    await addDoc(bookingsCol, { student:name, barber:b.name, barberId:b.id, period, time, ts:Date.now(), status:'pending' });
+    window.closeModal();
+    document.getElementById('booking-main').style.display = 'none';
+    document.getElementById('success-screen').classList.add('show');
+    document.getElementById('success-msg').innerHTML =
+      '<strong style="color:var(--white)">' + name + '</strong>, you\'re booked with <strong style="color:var(--gold)">' + b.name + '</strong> during <strong style="color:var(--white)">' + period + ' Period</strong>.';
+    if (hallCode) {
+      document.getElementById('hall-code-show').textContent = hallCode;
+      document.getElementById('hall-code-box').style.display = 'block';
+    } else { document.getElementById('hall-code-box').style.display = 'none'; }
+    sessionStorage.setItem('myBk', JSON.stringify({ name, barber:b.name, period, code:hallCode }));
+  } catch(e) { toast('Booking failed. Check connection.'); }
+  finally { btn.textContent = 'Confirm Booking'; btn.disabled = false; }
+};
+
+window.goBack = () => {
+  document.getElementById('booking-main').style.display = 'block';
+  document.getElementById('success-screen').classList.remove('show');
+  showBanner();
+};
+
+function showBanner() {
+  const s = sessionStorage.getItem('myBk'); if (!s) return;
+  try {
+    const bk = JSON.parse(s);
+    document.getElementById('my-booking-detail').textContent = bk.name + ' with ' + bk.barber + ' — ' + bk.period + ' Period';
+    const ce = document.getElementById('my-booking-code');
+    if (bk.code) { ce.textContent = bk.code; ce.style.display = 'block'; } else { ce.style.display = 'none'; }
+    document.getElementById('my-booking-banner').style.display = 'block';
+  } catch(e) {}
+}
+
+// BARBER
+window.showReg   = () => { document.getElementById('barber-login').style.display='none'; document.getElementById('barber-register').style.display='block'; };
+window.showLogin = () => { document.getElementById('barber-register').style.display='none'; document.getElementById('barber-login').style.display='block'; };
+
+function fillSel() {
+  const sel = document.getElementById('barber-select'); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">-- select your name --</option>';
+  barbers.forEach(b => { const o = document.createElement('option'); o.value=b.id; o.textContent=b.name; sel.appendChild(o); });
+  if (cur) sel.value = cur;
+}
+
+window.barberLogin = () => {
+  const id = document.getElementById('barber-select').value;
+  const pc = document.getElementById('barber-passcode').value.trim();
+  if (!id) { showErr('barber-error','Select your name first!'); return; }
+  if (!pc) { showErr('barber-error','Enter your passcode!'); return; }
+  const b = barbers.find(x => x.id === id);
+  if (!b) { showErr('barber-error','Barber not found.'); return; }
+  if (String(b.passcode).trim() !== pc) { showErr('barber-error','Wrong passcode. Try again.'); return; }
+  hideErr('barber-error');
+  const btn = document.querySelector('#barber-login .primary-btn');
+  btn.textContent = 'Loading...'; btn.disabled = true;
+  loggedInId = id;
+  setTimeout(() => {
+    btn.textContent = 'Enter'; btn.disabled = false;
+    document.getElementById('barber-login').style.display = 'none';
+    document.getElementById('barber-dashboard').style.display = 'block';
+    renderBarberDash();
+  }, 200);
+};
+
+window.registerBarber = async () => {
+  const sc = document.getElementById('reg-shop-code').value.trim();
+  const name = document.getElementById('reg-name').value.trim();
+  const pc1 = document.getElementById('reg-pc1').value.trim();
+  const pc2 = document.getElementById('reg-pc2').value.trim();
+  if (sc !== shopPc) { showErr('reg-error','Wrong shop passcode. Ask your teacher.'); return; }
+  if (!name) { showErr('reg-error','Enter your name!'); return; }
+  if (!pc1)  { showErr('reg-error','Create a passcode!'); return; }
+  if (pc1 !== pc2) { showErr('reg-error','Passcodes do not match!'); return; }
+  if (barbers.find(b => b.name.toLowerCase()===name.toLowerCase())) { showErr('reg-error','That name is already taken!'); return; }
+  const btn = document.querySelector('#barber-register .primary-btn');
+  btn.textContent = 'Creating...'; btn.disabled = true;
+  try {
+    const ref = await addDoc(barbersCol, { name, passcode:pc1, status:'open' });
+    loggedInId = ref.id; hideErr('reg-error');
+    document.getElementById('barber-register').style.display = 'none';
+    document.getElementById('barber-dashboard').style.display = 'block';
+    renderBarberDash();
+  } catch(e) { showErr('reg-error','Registration failed. Check connection.'); }
+  finally { btn.textContent = 'Create Account'; btn.disabled = false; }
+};
+
+function barberLogout() {
+  loggedInId = null;
+  document.getElementById('barber-dashboard').style.display = 'none';
+  document.getElementById('barber-login').style.display = 'block';
+  document.getElementById('barber-passcode').value = '';
+  hideErr('barber-error'); fillSel();
+}
+window.barberLogout = barberLogout;
+
+function renderBarberDash() {
+  const b = barbers.find(x => x.id === loggedInId); if (!b) { barberLogout(); return; }
+  document.getElementById('b-avatar').textContent = ini(b.name);
+  document.getElementById('b-name').textContent = b.name;
+  document.getElementById('btn-open').classList.toggle('active', b.status==='open');
+  document.getElementById('btn-closed').classList.toggle('active', b.status!=='open');
+  const mine = bookings.filter(bk => bk.barberId === loggedInId);
+  const list = document.getElementById('barber-client-list');
+  if (!mine.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128203;</div><div class="empty-text">No bookings yet.<br>Flip yourself open and they\'ll come.</div></div>'; return; }
+  list.innerHTML = '';
+  mine.forEach(bk => {
+    const row = document.createElement('div'); row.className = 'client-row';
+    const tag = bk.status==='showed'?'<span class="status-tag showed">&#9989; Showed</span>':bk.status==='noshow'?'<span class="status-tag noshow">&#10060; No Show</span>':'<span class="status-tag pending">&#9203; Pending</span>';
+    const btns = bk.status==='pending'?'<div class="client-actions"><button class="action-btn showed">&#9989; Showed</button><button class="action-btn noshow">&#10060; No Show</button></div>':'';
+    row.innerHTML = '<div class="client-top"><div><div class="client-name">'+bk.student+'</div><div class="client-period">'+bk.period+' Period &middot; '+bk.time+'</div></div>'+tag+'</div>'+btns;
+    if (bk.status==='pending') {
+      row.querySelector('.action-btn.showed').addEventListener('click', () => logClient(bk.id,'showed'));
+      row.querySelector('.action-btn.noshow').addEventListener('click',  () => logClient(bk.id,'noshow'));
+    }
+    list.appendChild(row);
+  });
+}
+
+window.setBarberStatus = async s => { if (loggedInId) await updateDoc(doc(db,'barbers',loggedInId), { status:s }); };
+async function logClient(id, s) { await updateDoc(doc(db,'bookings',id), { status:s }); }
+
+// TEACHER
+window.teacherLogin = () => {
+  if (document.getElementById('teacher-pc-input').value === TEACHER_PW) {
+    document.getElementById('teacher-login').style.display = 'none';
+    document.getElementById('teacher-dashboard').style.display = 'block';
+    renderTeacher();
+  } else showErr('teacher-error','Wrong passcode. Try again.');
+};
+
+window.teacherLogout = () => {
+  document.getElementById('teacher-dashboard').style.display = 'none';
+  document.getElementById('teacher-login').style.display = 'block';
+  document.getElementById('teacher-pc-input').value = ''; hideErr('teacher-error');
+};
+
+function renderTeacher() {
+  const showed = bookings.filter(b=>b.status==='showed').length;
+  const noshow = bookings.filter(b=>b.status==='noshow').length;
+  document.getElementById('stats-row').innerHTML =
+    '<div class="stat-card"><div class="stat-num">'+bookings.length+'</div><div class="stat-label">Bookings</div></div>'+
+    '<div class="stat-card"><div class="stat-num" style="color:var(--green)">'+showed+'</div><div class="stat-label">Showed Up</div></div>'+
+    '<div class="stat-card"><div class="stat-num" style="color:var(--red)">'+noshow+'</div><div class="stat-label">No Shows</div></div>';
+  const sp = document.getElementById('shop-pc-display'); if (sp) sp.textContent = shopPc;
+  const hd = document.getElementById('hall-display'); if (hd) hd.textContent = hallCode || '--';
+  const ml = document.getElementById('barber-manage-list'); ml.innerHTML = '';
+  if (!barbers.length) { ml.innerHTML='<div class="empty-state"><div class="empty-icon">&#128136;</div><div class="empty-text">No barbers registered yet.<br>Share the shop passcode so they can sign up.</div></div>'; }
+  else {
+    barbers.forEach(b => {
+      const row = document.createElement('div'); row.className = 'manage-row';
+      const isOpen = b.status==='open';
+      row.innerHTML = '<div class="manage-info"><div class="manage-avatar">'+ini(b.name)+'</div><div><div class="manage-name">'+b.name+'</div><div class="manage-status '+b.status+'">'+(isOpen?'&#9679; Open':'&#9679; Closed')+'</div></div></div><div class="manage-actions"><button class="tog-btn '+b.status+'">'+(isOpen?'Open':'Closed')+'</button><button class="del-btn">&#10005;</button></div>';
+      row.querySelector('.tog-btn').addEventListener('click', () => tToggle(b.id));
+      row.querySelector('.del-btn').addEventListener('click', () => tRemove(b.id));
+      ml.appendChild(row);
+    });
+  }
+  const bl = document.getElementById('bookings-list'); bl.innerHTML = '';
+  if (!bookings.length) { bl.innerHTML='<div class="empty-state"><div class="empty-icon">&#128203;</div><div class="empty-text">No bookings yet.</div></div>'; }
+  else {
+    bookings.slice().reverse().forEach(bk => {
+      const e = bk.status==='showed'?'&#9989;':bk.status==='noshow'?'&#10060;':'&#9203;';
+      const row = document.createElement('div'); row.className = 'booking-row';
+      row.innerHTML = '<div><div class="booking-student">'+e+' '+bk.student+'</div><div class="booking-detail">Booked at '+bk.time+'</div></div><div><div class="booking-barber">'+bk.barber+'</div><div class="booking-period">'+bk.period+' Period</div></div>';
+      bl.appendChild(row);
+    });
+  }
+}
+
+async function tToggle(id) {
+  const b = barbers.find(x=>x.id===id); if (!b) return;
+  await updateDoc(doc(db,'barbers',id), { status: b.status==='open'?'closed':'open' });
+}
+async function tRemove(id) {
+  await deleteDoc(doc(db,'barbers',id));
+  if (loggedInId===id) barberLogout();
+}
+
+window.clearBookings = async () => {
+  const snap = await getDocs(bookingsCol);
+  const batch = writeBatch(db);
+  snap.docs.forEach(d => batch.delete(d.ref));
+  await batch.commit();
+};
+
+window.togglePcForm = () => {
+  const f = document.getElementById('change-pc-form');
+  f.style.display = f.style.display==='block'?'none':'block';
+  document.getElementById('new-shop-pc').value=''; hideErr('pc-error');
+};
+
+window.saveShopPc = async () => {
+  const val = document.getElementById('new-shop-pc').value.trim();
+  if (!val) { showErr('pc-error','Enter a new passcode!'); return; }
+  await setDoc(settingsRef, { shopPc:val, hallCode }, { merge:true });
+  document.getElementById('change-pc-form').style.display='none';
+  document.getElementById('new-shop-pc').value=''; hideErr('pc-error');
+};
+
+window.genHallCode = async () => {
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let code='';
+  for (let i=0;i<6;i++) code+=chars.charAt(Math.floor(Math.random()*chars.length));
+  await setDoc(settingsRef, { shopPc, hallCode:code }, { merge:true });
+};
+
+window.setCustomHall = async () => {
+  const val = document.getElementById('custom-hall').value.trim().toUpperCase();
+  if (!val) { showErr('hall-err','Enter a code!'); return; }
+  if (val.length<3) { showErr('hall-err','Code must be at least 3 characters.'); return; }
+  await setDoc(settingsRef, { shopPc, hallCode:val }, { merge:true });
+  document.getElementById('custom-hall').value=''; hideErr('hall-err');
+};
+</script>
+
+</body>
+</html>
