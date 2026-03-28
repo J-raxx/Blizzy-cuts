@@ -167,6 +167,7 @@ header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;back
       </div>
       <div id="my-booking-detail" style="font-size:14px;font-weight:600;color:var(--white);"></div>
       <div style="font-size:11px;color:var(--muted);margin-top:4px;">Be there at the START of the period.</div>
+      <button onclick="cancelMyBooking()" style="margin-top:10px;width:100%;padding:10px;background:transparent;border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">Cancel My Booking</button>
     </div>
     <div class="section-label">Available Now</div>
     <div id="open-barbers"><div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;">Connecting...</div></div>
@@ -628,11 +629,12 @@ function renderBarberDash() {
   mine.forEach(bk => {
     const row = document.createElement('div'); row.className = 'client-row';
     const tag = bk.status==='showed'?'<span class="status-tag showed">&#9989; Showed</span>':bk.status==='noshow'?'<span class="status-tag noshow">&#10060; No Show</span>':'<span class="status-tag pending">&#9203; Pending</span>';
-    const btns = bk.status==='pending'?'<div class="client-actions"><button class="action-btn showed">&#9989; Showed</button><button class="action-btn noshow">&#10060; No Show</button></div>':'';
+    const btns = bk.status==='pending'?'<div class="client-actions"><button class="action-btn showed">&#9989; Showed</button><button class="action-btn noshow">&#10060; No Show</button><button class="action-btn" style="background:rgba(224,85,85,0.15);color:var(--red);border:1px solid var(--red);">Cancel</button></div>':'';
     row.innerHTML = '<div class="client-top"><div><div class="client-name">'+bk.student+'</div><div class="client-period">'+bk.period+' Period &middot; '+bk.time+'</div></div>'+tag+'</div>'+btns;
     if (bk.status==='pending') {
       row.querySelector('.action-btn.showed').addEventListener('click', () => logClient(bk.id,'showed'));
       row.querySelector('.action-btn.noshow').addEventListener('click',  () => logClient(bk.id,'noshow'));
+      row.querySelectorAll('.action-btn')[2].addEventListener('click', () => cancelBooking(bk.id));
     }
     list.appendChild(row);
   });
@@ -683,7 +685,8 @@ function renderTeacher() {
     bookings.slice().reverse().forEach(bk => {
       const e = bk.status==='showed'?'&#9989;':bk.status==='noshow'?'&#10060;':'&#9203;';
       const row = document.createElement('div'); row.className = 'booking-row';
-      row.innerHTML = '<div><div class="booking-student">'+e+' '+bk.student+'</div><div class="booking-detail">Booked at '+bk.time+'</div></div><div><div class="booking-barber">'+bk.barber+'</div><div class="booking-period">'+bk.period+' Period</div></div>';
+      row.innerHTML = '<div><div class="booking-student">'+e+' '+bk.student+'</div><div class="booking-detail">Booked at '+bk.time+'</div></div><div style="display:flex;align-items:center;gap:10px;"><div style="text-align:right"><div class="booking-barber">'+bk.barber+'</div><div class="booking-period">'+bk.period+' Period</div></div><button style="padding:6px 10px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--red);font-size:14px;cursor:pointer;flex-shrink:0;">&#10005;</button></div>';
+      row.querySelector('button').addEventListener('click', () => cancelBooking(bk.id));
       bl.appendChild(row);
     });
   }
@@ -723,6 +726,28 @@ window.genHallCode = async () => {
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let code='';
   for (let i=0;i<6;i++) code+=chars.charAt(Math.floor(Math.random()*chars.length));
   await setDoc(settingsRef, { shopPc, hallCode:code }, { merge:true });
+};
+
+window.cancelBooking = async id => {
+  await deleteDoc(doc(db,'bookings',id));
+};
+
+window.cancelMyBooking = async () => {
+  const s = sessionStorage.getItem('myBk');
+  if (!s) return;
+  try {
+    const bk = JSON.parse(s);
+    // Find the booking in Firestore by matching name, barber, period
+    const snap = await getDocs(bookingsCol);
+    const match = snap.docs.find(d => {
+      const data = d.data();
+      return data.student === bk.name && data.barber === bk.barber && data.period === bk.period && data.status !== 'noshow';
+    });
+    if (match) await deleteDoc(match.ref);
+    sessionStorage.removeItem('myBk');
+    document.getElementById('my-booking-banner').style.display = 'none';
+    toast('Booking cancelled.');
+  } catch(e) { toast('Could not cancel. Try again.'); }
 };
 
 window.setCustomHall = async () => {
