@@ -160,15 +160,7 @@ header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;back
 
 <div class="view active" id="view-book">
   <div id="booking-main">
-    <div class="my-booking-banner" id="my-booking-banner">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);">Your Current Booking</div>
-        <div id="my-booking-code" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:4px;color:var(--gold);display:none;"></div>
-      </div>
-      <div id="my-booking-detail" style="font-size:14px;font-weight:600;color:var(--white);"></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Be there at the START of the period.</div>
-      <button onclick="cancelMyBooking()" style="margin-top:10px;width:100%;padding:10px;background:transparent;border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">Cancel My Booking</button>
-    </div>
+    <div id="my-bookings-list"></div>
     <div class="section-label">Available Now</div>
     <div id="open-barbers"><div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;">Connecting...</div></div>
     <div class="section-label" style="margin-top:20px">Unavailable</div>
@@ -495,7 +487,7 @@ window.confirmBooking = async () => {
   const ap = hr >= 12 ? 'PM' : 'AM'; hr = hr % 12; if (!hr) hr = 12;
   const time = hr + ':' + (mn<10?'0':'') + mn + ' ' + ap;
   try {
-    await addDoc(bookingsCol, { student:name, barber:b.name, barberId:b.id, period, time, ts:Date.now(), status:'pending' });
+    const newRef = await addDoc(bookingsCol, { student:name, barber:b.name, barberId:b.id, period, time, ts:Date.now(), status:'pending' });
     window.closeModal();
     document.getElementById('booking-main').style.display = 'none';
     document.getElementById('success-screen').classList.add('show');
@@ -505,7 +497,11 @@ window.confirmBooking = async () => {
       document.getElementById('hall-code-show').textContent = hallCode;
       document.getElementById('hall-code-box').style.display = 'block';
     } else { document.getElementById('hall-code-box').style.display = 'none'; }
-    sessionStorage.setItem('myBk', JSON.stringify({ name, barber:b.name, period, code:hallCode }));
+    // Save booking ID so student can cancel by exact ID
+    const myBookings = JSON.parse(sessionStorage.getItem('myBookings') || '[]');
+    myBookings.push({ id:newRef.id, name, barber:b.name, period, code:hallCode });
+    sessionStorage.setItem('myBookings', JSON.stringify(myBookings));
+    sessionStorage.setItem('myBk', JSON.stringify({ id:newRef.id, name, barber:b.name, period, code:hallCode }));
   } catch(e) { toast('Booking failed. Check connection.'); }
   finally { btn.textContent = 'Confirm Booking'; btn.disabled = false; }
 };
@@ -517,40 +513,50 @@ window.goBack = () => {
 };
 
 function checkStudentBooking() {
-  const s = sessionStorage.getItem('myBk');
-  if (!s) return;
-  try {
-    const bk = JSON.parse(s);
-    // Check if this student's booking still exists in the database
-    const stillExists = bookings.find(b =>
-      b.student === bk.name &&
-      b.barber === bk.barber &&
-      b.period === bk.period &&
-      b.status !== 'noshow'
-    );
-    if (!stillExists) {
-      // Booking was deleted or marked no show — clear it
-      sessionStorage.removeItem('myBk');
-      document.getElementById('my-booking-banner').style.display = 'none';
-      // If they're on the success screen, send them back
-      const ss = document.getElementById('success-screen');
-      if (ss.classList.contains('show')) {
-        ss.classList.remove('show');
-        document.getElementById('booking-main').style.display = 'block';
-      }
+  const myBookings = JSON.parse(sessionStorage.getItem('myBookings') || '[]');
+  const stillActive = myBookings.filter(bk =>
+    bookings.find(b => b.id === bk.id && b.status !== 'noshow')
+  );
+  if (stillActive.length !== myBookings.length) {
+    sessionStorage.setItem('myBookings', JSON.stringify(stillActive));
+    const cur = sessionStorage.getItem('myBk');
+    if (cur) {
+      try {
+        const curBk = JSON.parse(cur);
+        if (!stillActive.find(b => b.id === curBk.id)) {
+          sessionStorage.removeItem('myBk');
+          const ss = document.getElementById('success-screen');
+          if (ss.classList.contains('show')) {
+            ss.classList.remove('show');
+            document.getElementById('booking-main').style.display = 'block';
+          }
+        }
+      } catch(e) {}
     }
-  } catch(e) {}
+  }
+  showBanner();
 }
 
 function showBanner() {
-  const s = sessionStorage.getItem('myBk'); if (!s) return;
-  try {
-    const bk = JSON.parse(s);
-    document.getElementById('my-booking-detail').textContent = bk.name + ' with ' + bk.barber + ' — ' + bk.period + ' Period';
-    const ce = document.getElementById('my-booking-code');
-    if (bk.code) { ce.textContent = bk.code; ce.style.display = 'block'; } else { ce.style.display = 'none'; }
-    document.getElementById('my-booking-banner').style.display = 'block';
-  } catch(e) {}
+  const myBookings = JSON.parse(sessionStorage.getItem('myBookings') || '[]');
+  const container = document.getElementById('my-bookings-list');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!myBookings.length) return;
+  myBookings.forEach(bk => {
+    const div = document.createElement('div');
+    div.style.cssText = 'background:var(--card);border:1px solid var(--gold);border-radius:12px;padding:14px 16px;margin-bottom:12px;';
+    div.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+        '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);">Your Booking</div>' +
+        (bk.code ? '<div style="font-family:sans-serif;font-size:18px;letter-spacing:4px;color:var(--gold);">' + bk.code + '</div>' : '') +
+      '</div>' +
+      '<div style="font-size:14px;font-weight:600;color:var(--white);">' + bk.name + ' with ' + bk.barber + ' &mdash; ' + bk.period + ' Period</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:4px;">Be there at the START of the period.</div>' +
+      '<button style="margin-top:10px;width:100%;padding:10px;background:transparent;border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">Cancel This Booking</button>';
+    div.querySelector('button').addEventListener('click', () => cancelMyBooking(bk.id));
+    container.appendChild(div);
+  });
 }
 
 // BARBER
@@ -732,21 +738,18 @@ window.cancelBooking = async id => {
   await deleteDoc(doc(db,'bookings',id));
 };
 
-window.cancelMyBooking = async () => {
-  const s = sessionStorage.getItem('myBk');
-  if (!s) return;
+window.cancelMyBooking = async (bookingId) => {
   try {
-    const bk = JSON.parse(s);
-    // Find the booking in Firestore by matching name, barber, period
-    const snap = await getDocs(bookingsCol);
-    const match = snap.docs.find(d => {
-      const data = d.data();
-      return data.student === bk.name && data.barber === bk.barber && data.period === bk.period && data.status !== 'noshow';
-    });
-    if (match) await deleteDoc(match.ref);
-    sessionStorage.removeItem('myBk');
-    document.getElementById('my-booking-banner').style.display = 'none';
+    await deleteDoc(doc(db,'bookings', bookingId));
+    // Remove from session
+    const myBookings = JSON.parse(sessionStorage.getItem('myBookings') || '[]');
+    const updated = myBookings.filter(b => b.id !== bookingId);
+    sessionStorage.setItem('myBookings', JSON.stringify(updated));
+    // Also clear myBk if it matches
+    const cur = sessionStorage.getItem('myBk');
+    if (cur) { try { if (JSON.parse(cur).id === bookingId) sessionStorage.removeItem('myBk'); } catch(e) {} }
     toast('Booking cancelled.');
+    showBanner();
   } catch(e) { toast('Could not cancel. Try again.'); }
 };
 
